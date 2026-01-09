@@ -30,6 +30,7 @@ export const DEFAULT_MAP_LAYERS: MapLayers = {
   earthquakes: true,
   weather: true,
   economic: true,
+  countries: false,
 };
 
 export const MONITOR_COLORS = [

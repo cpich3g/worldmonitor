@@ -195,6 +195,7 @@ export interface MapLayers {
   earthquakes: boolean;
   weather: boolean;
   economic: boolean;
+  countries: boolean;
 }
 
 export interface PredictionMarket {

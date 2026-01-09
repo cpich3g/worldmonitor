@@ -14,6 +14,7 @@ import {
   SANCTIONED_COUNTRIES,
   STRATEGIC_WATERWAYS,
   APT_GROUPS,
+  COUNTRY_LABELS,
 } from '@/config';
 import { MapPopup } from './MapPopup';
 
@@ -593,6 +594,11 @@ export class MapComponent {
 
     if (this.state.view !== 'global' && this.state.view !== 'mena') return;
 
+    // Country labels (rendered first so they appear behind other overlays)
+    if (this.state.layers.countries) {
+      this.renderCountryLabels(projection);
+    }
+
     // Strategic waterways
     this.renderWaterways(projection);
 
@@ -781,6 +787,22 @@ export class MapComponent {
         this.overlays.appendChild(div);
       });
     }
+  }
+
+  private renderCountryLabels(projection: d3.GeoProjection): void {
+    COUNTRY_LABELS.forEach((country) => {
+      const pos = projection([country.lon, country.lat]);
+      if (!pos) return;
+
+      const div = document.createElement('div');
+      div.className = 'country-label';
+      div.style.left = `${pos[0]}px`;
+      div.style.top = `${pos[1]}px`;
+      div.textContent = country.name;
+      div.dataset.countryId = String(country.id);
+
+      this.overlays.appendChild(div);
+    });
   }
 
   private renderWaterways(projection: d3.GeoProjection): void {

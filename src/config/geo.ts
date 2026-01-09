@@ -405,3 +405,83 @@ export const MAP_URLS = {
   world: 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
   us: 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json',
 };
+
+export interface CountryLabel {
+  id: number;
+  name: string;
+  lat: number;
+  lon: number;
+}
+
+export const COUNTRY_LABELS: CountryLabel[] = [
+  // Middle East (focus region)
+  { id: 368, name: 'Iraq', lat: 33.2, lon: 43.7 },
+  { id: 760, name: 'Syria', lat: 35.0, lon: 38.5 },
+  { id: 364, name: 'Iran', lat: 32.4, lon: 53.7 },
+  { id: 792, name: 'Turkey', lat: 39.0, lon: 35.2 },
+  { id: 682, name: 'Saudi Arabia', lat: 24.0, lon: 45.0 },
+  { id: 376, name: 'Israel', lat: 31.5, lon: 34.8 },
+  { id: 400, name: 'Jordan', lat: 31.2, lon: 36.5 },
+  { id: 422, name: 'Lebanon', lat: 33.9, lon: 35.9 },
+  { id: 818, name: 'Egypt', lat: 26.8, lon: 30.8 },
+  { id: 784, name: 'UAE', lat: 24.0, lon: 54.0 },
+  { id: 634, name: 'Qatar', lat: 25.4, lon: 51.2 },
+  { id: 414, name: 'Kuwait', lat: 29.3, lon: 47.5 },
+  { id: 887, name: 'Yemen', lat: 15.5, lon: 48.5 },
+  { id: 512, name: 'Oman', lat: 21.5, lon: 57.0 },
+  { id: 48, name: 'Bahrain', lat: 26.0, lon: 50.6 },
+  { id: 275, name: 'Palestine', lat: 31.9, lon: 35.2 },
+  // Major powers
+  { id: 840, name: 'USA', lat: 39.0, lon: -98.0 },
+  { id: 643, name: 'Russia', lat: 60.0, lon: 100.0 },
+  { id: 156, name: 'China', lat: 35.0, lon: 105.0 },
+  { id: 356, name: 'India', lat: 22.0, lon: 79.0 },
+  { id: 826, name: 'UK', lat: 54.0, lon: -2.0 },
+  { id: 250, name: 'France', lat: 46.2, lon: 2.2 },
+  { id: 276, name: 'Germany', lat: 51.2, lon: 10.5 },
+  { id: 380, name: 'Italy', lat: 42.8, lon: 12.8 },
+  { id: 724, name: 'Spain', lat: 40.5, lon: -3.7 },
+  { id: 616, name: 'Poland', lat: 52.0, lon: 19.4 },
+  { id: 804, name: 'Ukraine', lat: 48.4, lon: 31.2 },
+  { id: 392, name: 'Japan', lat: 36.2, lon: 138.3 },
+  { id: 410, name: 'S. Korea', lat: 36.5, lon: 128.0 },
+  { id: 408, name: 'N. Korea', lat: 40.3, lon: 127.5 },
+  // Africa
+  { id: 566, name: 'Nigeria', lat: 9.1, lon: 8.7 },
+  { id: 710, name: 'South Africa', lat: -29.0, lon: 25.0 },
+  { id: 729, name: 'Sudan', lat: 15.5, lon: 30.0 },
+  { id: 728, name: 'S. Sudan', lat: 7.0, lon: 30.0 },
+  { id: 231, name: 'Ethiopia', lat: 9.1, lon: 40.5 },
+  { id: 404, name: 'Kenya', lat: -0.5, lon: 38.0 },
+  { id: 12, name: 'Algeria', lat: 28.0, lon: 2.0 },
+  { id: 504, name: 'Morocco', lat: 32.0, lon: -6.0 },
+  { id: 434, name: 'Libya', lat: 27.0, lon: 17.0 },
+  // Asia
+  { id: 586, name: 'Pakistan', lat: 30.4, lon: 69.3 },
+  { id: 4, name: 'Afghanistan', lat: 33.9, lon: 67.7 },
+  { id: 104, name: 'Myanmar', lat: 21.9, lon: 96.0 },
+  { id: 764, name: 'Thailand', lat: 15.9, lon: 101.0 },
+  { id: 704, name: 'Vietnam', lat: 16.0, lon: 108.0 },
+  { id: 360, name: 'Indonesia', lat: -2.5, lon: 118.0 },
+  { id: 458, name: 'Malaysia', lat: 4.2, lon: 101.5 },
+  { id: 608, name: 'Philippines', lat: 12.9, lon: 122.0 },
+  { id: 158, name: 'Taiwan', lat: 23.7, lon: 121.0 },
+  // Americas
+  { id: 124, name: 'Canada', lat: 56.0, lon: -106.0 },
+  { id: 484, name: 'Mexico', lat: 23.6, lon: -102.5 },
+  { id: 76, name: 'Brazil', lat: -14.2, lon: -51.9 },
+  { id: 32, name: 'Argentina', lat: -38.4, lon: -63.6 },
+  { id: 862, name: 'Venezuela', lat: 6.4, lon: -66.6 },
+  { id: 170, name: 'Colombia', lat: 4.6, lon: -74.3 },
+  // Europe
+  { id: 112, name: 'Belarus', lat: 53.7, lon: 28.0 },
+  { id: 348, name: 'Hungary', lat: 47.2, lon: 19.5 },
+  { id: 642, name: 'Romania', lat: 45.9, lon: 25.0 },
+  { id: 300, name: 'Greece', lat: 39.1, lon: 21.8 },
+  { id: 752, name: 'Sweden', lat: 62.0, lon: 15.0 },
+  { id: 578, name: 'Norway', lat: 61.0, lon: 8.5 },
+  { id: 246, name: 'Finland', lat: 64.0, lon: 26.0 },
+  // Oceania
+  { id: 36, name: 'Australia', lat: -25.3, lon: 133.8 },
+  { id: 554, name: 'New Zealand', lat: -41.0, lon: 174.9 },
+];
