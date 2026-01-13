@@ -140,38 +140,6 @@ ensure_environment() {
     fi
 }
 
-# Build environment variables arguments
-build_env_vars() {
-    local env_vars=""
-    
-    # Add optional API keys if set
-    if [ -n "$FINNHUB_API_KEY" ]; then
-        env_vars="$env_vars FINNHUB_API_KEY=$FINNHUB_API_KEY"
-    fi
-    
-    if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
-        env_vars="$env_vars CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN"
-    fi
-    
-    if [ -n "$ACLED_ACCESS_TOKEN" ]; then
-        env_vars="$env_vars ACLED_ACCESS_TOKEN=$ACLED_ACCESS_TOKEN"
-    fi
-    
-    if [ -n "$FRED_API_KEY" ]; then
-        env_vars="$env_vars FRED_API_KEY=$FRED_API_KEY"
-    fi
-    
-    if [ -n "$VITE_WS_RELAY_URL" ]; then
-        env_vars="$env_vars VITE_WS_RELAY_URL=$VITE_WS_RELAY_URL"
-    fi
-    
-    if [ -n "$VITE_OPENSKY_RELAY_URL" ]; then
-        env_vars="$env_vars VITE_OPENSKY_RELAY_URL=$VITE_OPENSKY_RELAY_URL"
-    fi
-    
-    echo "$env_vars"
-}
-
 # Deploy or update Container App
 deploy_app() {
     echo -e "${YELLOW}Deploying Container App...${NC}"
@@ -183,51 +151,86 @@ deploy_app() {
     ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query username -o tsv)
     ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
     
-    # Build environment variables
-    ENV_VARS=$(build_env_vars)
+    # Build environment variables as an array for safe handling
+    local env_vars_array=()
+    
+    if [ -n "$FINNHUB_API_KEY" ]; then
+        env_vars_array+=("FINNHUB_API_KEY=$FINNHUB_API_KEY")
+    fi
+    
+    if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+        env_vars_array+=("CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN")
+    fi
+    
+    if [ -n "$ACLED_ACCESS_TOKEN" ]; then
+        env_vars_array+=("ACLED_ACCESS_TOKEN=$ACLED_ACCESS_TOKEN")
+    fi
+    
+    if [ -n "$FRED_API_KEY" ]; then
+        env_vars_array+=("FRED_API_KEY=$FRED_API_KEY")
+    fi
+    
+    if [ -n "$VITE_WS_RELAY_URL" ]; then
+        env_vars_array+=("VITE_WS_RELAY_URL=$VITE_WS_RELAY_URL")
+    fi
+    
+    if [ -n "$VITE_OPENSKY_RELAY_URL" ]; then
+        env_vars_array+=("VITE_OPENSKY_RELAY_URL=$VITE_OPENSKY_RELAY_URL")
+    fi
     
     # Check if app exists
     if az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$AZURE_RESOURCE_GROUP" &>/dev/null; then
         echo -e "${YELLOW}Updating existing Container App...${NC}"
         
-        # Update the container app
+        # Update the container app image
         az containerapp update \
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --image "$IMAGE_NAME"
         
         # Update environment variables if any
-        if [ -n "$ENV_VARS" ]; then
+        if [ "${#env_vars_array[@]}" -ne 0 ]; then
             az containerapp update \
                 --name "$CONTAINER_APP_NAME" \
                 --resource-group "$AZURE_RESOURCE_GROUP" \
-                --set-env-vars $ENV_VARS
+                --set-env-vars "${env_vars_array[@]}"
         fi
     else
         echo -e "${YELLOW}Creating new Container App...${NC}"
         
-        # Build create command
-        CREATE_CMD="az containerapp create \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $AZURE_RESOURCE_GROUP \
-            --environment $CONTAINER_APP_ENV \
-            --image $IMAGE_NAME \
-            --registry-server $ACR_LOGIN_SERVER \
-            --registry-username $ACR_USERNAME \
-            --registry-password $ACR_PASSWORD \
-            --target-port 3000 \
-            --ingress external \
-            --cpu 0.5 \
-            --memory 1.0Gi \
-            --min-replicas 0 \
-            --max-replicas 3"
-        
-        # Add environment variables if any
-        if [ -n "$ENV_VARS" ]; then
-            CREATE_CMD="$CREATE_CMD --env-vars $ENV_VARS"
+        # Create container app with proper quoting to avoid command injection
+        if [ "${#env_vars_array[@]}" -ne 0 ]; then
+            az containerapp create \
+                --name "$CONTAINER_APP_NAME" \
+                --resource-group "$AZURE_RESOURCE_GROUP" \
+                --environment "$CONTAINER_APP_ENV" \
+                --image "$IMAGE_NAME" \
+                --registry-server "$ACR_LOGIN_SERVER" \
+                --registry-username "$ACR_USERNAME" \
+                --registry-password "$ACR_PASSWORD" \
+                --target-port 3000 \
+                --ingress external \
+                --cpu 0.5 \
+                --memory 1.0Gi \
+                --min-replicas 0 \
+                --max-replicas 3 \
+                --env-vars "${env_vars_array[@]}"
+        else
+            az containerapp create \
+                --name "$CONTAINER_APP_NAME" \
+                --resource-group "$AZURE_RESOURCE_GROUP" \
+                --environment "$CONTAINER_APP_ENV" \
+                --image "$IMAGE_NAME" \
+                --registry-server "$ACR_LOGIN_SERVER" \
+                --registry-username "$ACR_USERNAME" \
+                --registry-password "$ACR_PASSWORD" \
+                --target-port 3000 \
+                --ingress external \
+                --cpu 0.5 \
+                --memory 1.0Gi \
+                --min-replicas 0 \
+                --max-replicas 3
         fi
-        
-        eval $CREATE_CMD
     fi
     
     echo -e "${GREEN}Container App deployed${NC}"

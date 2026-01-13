@@ -14,8 +14,8 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.debug'],
       },
     },
     // Performance: Generate source maps only for error tracking (hidden from browser devtools)

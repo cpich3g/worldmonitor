@@ -564,22 +564,34 @@ export class MapComponent {
 
       // Wait for container to have proper dimensions before initial render
       if (this.container.clientWidth === 0 || this.container.clientHeight === 0) {
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
+          let resolved = false;
+          let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+          const cleanup = () => {
+            if (!resolved) {
+              resolved = true;
+              observer.disconnect();
+              if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+                timeoutId = undefined;
+              }
+              resolve();
+            }
+          };
+
           const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
               if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-                observer.disconnect();
-                resolve();
+                cleanup();
                 break;
               }
             }
           });
+
           observer.observe(this.container);
           // Fallback timeout to prevent indefinite wait
-          setTimeout(() => {
-            observer.disconnect();
-            resolve();
-          }, 2000);
+          timeoutId = setTimeout(cleanup, 2000);
         });
       }
 
