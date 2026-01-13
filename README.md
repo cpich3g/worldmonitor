@@ -820,7 +820,7 @@ The entire UI is hand-crafted DOM manipulation—no React, Vue, or Angular. This
 
 ```bash
 # Clone the repository
-git clone https://github.com/koala73/worldmonitor.git
+git clone https://github.com/cpich3g/worldmonitor.git
 cd worldmonitor
 
 # Install dependencies
@@ -832,6 +832,71 @@ npm run dev
 # Build for production
 npm run build
 ```
+
+## Docker Deployment
+
+You can run World Monitor in a container:
+
+```bash
+# Build the Docker image
+docker build -t worldmonitor .
+
+# Run the container
+docker run -p 3000:3000 worldmonitor
+```
+
+Access the dashboard at http://localhost:3000
+
+## Azure Container Apps Deployment
+
+Deploy to Azure Container Apps with the included deployment script:
+
+### Prerequisites
+
+1. [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) installed and logged in
+2. An existing Azure Container Registry (ACR)
+3. Docker installed (for local builds) or use ACR Tasks
+
+### Quick Start
+
+```bash
+# Set required environment variables
+export AZURE_SUBSCRIPTION_ID=your-subscription-id
+export AZURE_RESOURCE_GROUP=worldmonitor-rg
+export ACR_NAME=yourcontainerregistry
+
+# Optional: Set API keys for full functionality
+export FINNHUB_API_KEY=your-finnhub-key
+export CLOUDFLARE_API_TOKEN=your-cloudflare-token
+
+# Run the deployment script
+./deploy/azure-deploy.sh
+```
+
+### Configuration Options
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AZURE_SUBSCRIPTION_ID` | Yes | Your Azure subscription ID |
+| `AZURE_RESOURCE_GROUP` | Yes | Resource group for deployment |
+| `ACR_NAME` | Yes | Azure Container Registry name |
+| `AZURE_LOCATION` | No | Azure region (default: `eastus`) |
+| `CONTAINER_APP_NAME` | No | App name (default: `worldmonitor`) |
+| `CONTAINER_APP_ENV` | No | Environment name (default: `worldmonitor-env`) |
+| `IMAGE_TAG` | No | Docker image tag (default: `latest`) |
+
+### Updating the Deployment
+
+To deploy a new version:
+
+```bash
+# Update with a new tag
+IMAGE_TAG=v1.0.1 ./deploy/azure-deploy.sh
+```
+
+### Environment Template
+
+Copy `.env.example` to `.env` and fill in your values for a complete configuration reference.
 
 ## API Dependencies
 

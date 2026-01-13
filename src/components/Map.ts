@@ -534,14 +534,54 @@ export class MapComponent {
   }
 
   private async loadMapData(): Promise<void> {
+    const maxRetries = 3;
+    const retryDelay = 1000;
+
+    const fetchWithRetry = async (url: string, retries: number = maxRetries): Promise<Response> => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response;
+      } catch (error) {
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          return fetchWithRetry(url, retries - 1);
+        }
+        throw error;
+      }
+    };
+
     try {
       const [worldResponse, usResponse] = await Promise.all([
-        fetch(MAP_URLS.world),
-        fetch(MAP_URLS.us),
+        fetchWithRetry(MAP_URLS.world),
+        fetchWithRetry(MAP_URLS.us),
       ]);
 
       this.worldData = await worldResponse.json();
       this.usData = await usResponse.json();
+
+      // Wait for container to have proper dimensions before initial render
+      if (this.container.clientWidth === 0 || this.container.clientHeight === 0) {
+        await new Promise<void>(resolve => {
+          const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                observer.disconnect();
+                resolve();
+                break;
+              }
+            }
+          });
+          observer.observe(this.container);
+          // Fallback timeout to prevent indefinite wait
+          setTimeout(() => {
+            observer.disconnect();
+            resolve();
+          }, 2000);
+        });
+      }
 
       this.render();
     } catch (e) {

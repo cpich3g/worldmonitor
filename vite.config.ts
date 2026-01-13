@@ -8,6 +8,18 @@ export default defineConfig({
     },
   },
   build: {
+    // Performance: Target modern browsers for smaller bundles
+    target: 'esnext',
+    // Performance: Enable minification with terser for better compression
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    // Performance: Generate source maps only for error tracking (hidden from browser devtools)
+    sourcemap: 'hidden',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -16,6 +28,8 @@ export default defineConfig({
         },
       },
     },
+    // Performance: Increase chunk size warning limit (D3 is large but acceptable)
+    chunkSizeWarningLimit: 600,
   },
   server: {
     port: 3000,
