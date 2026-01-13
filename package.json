@@ -12,6 +12,7 @@
     "@types/d3": "^7.4.3",
     "@types/topojson-client": "^3.1.5",
     "@types/topojson-specification": "^1.0.5",
+    "terser": "^5.44.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
     "ws": "^8.19.0"
