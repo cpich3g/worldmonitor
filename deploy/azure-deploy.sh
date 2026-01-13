@@ -30,11 +30,29 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Determine the project root directory (parent of deploy/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Default values
 DEFAULT_LOCATION="eastus"
 DEFAULT_CONTAINER_APP_NAME="worldmonitor"
 DEFAULT_CONTAINER_APP_ENV="worldmonitor-env"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
+
+# Verify we're in the right directory
+verify_project_root() {
+    if [ ! -f "$PROJECT_ROOT/package.json" ] || [ ! -f "$PROJECT_ROOT/Dockerfile" ]; then
+        echo -e "${RED}Error: Cannot find package.json or Dockerfile in project root${NC}"
+        echo "Expected project root: $PROJECT_ROOT"
+        echo "Make sure you're running this script from the worldmonitor repository."
+        exit 1
+    fi
+    
+    # Change to project root for Docker build context
+    cd "$PROJECT_ROOT"
+    echo -e "${GREEN}Project root: $PROJECT_ROOT${NC}"
+}
 
 # Check required environment variables
 check_required_vars() {
@@ -238,6 +256,7 @@ get_app_url() {
 main() {
     echo -e "${GREEN}=== World Monitor Azure Deployment ===${NC}"
     
+    verify_project_root
     check_required_vars
     set_defaults
     show_config
