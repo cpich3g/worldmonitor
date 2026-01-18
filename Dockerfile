@@ -3,16 +3,20 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Build-time arguments for Vite environment variables
+ARG VITE_WS_RELAY_URL
+ENV VITE_WS_RELAY_URL=$VITE_WS_RELAY_URL
+
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
 RUN npm ci
 
-# Copy source files
+# Copy source files (including .env if present)
 COPY . .
 
-# Build the application
+# Build the application (Vite will use VITE_* env vars)
 RUN npm run build
 
 # Production stage - use Node.js for API routes

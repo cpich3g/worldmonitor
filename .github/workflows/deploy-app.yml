@@ -55,14 +55,20 @@ jobs:
             --registry ${{ env.ACR_NAME }} \
             --image worldmonitor:${{ github.sha }} \
             --image worldmonitor:latest \
+            --build-arg VITE_WS_RELAY_URL=${{ secrets.VITE_WS_RELAY_URL }} \
             .
 
-      - name: Deploy to Container App
+      - name: Deploy to Container App with Environment Variables
         run: |
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ steps.acr.outputs.login_server }}/worldmonitor:${{ github.sha }}
+            --image ${{ steps.acr.outputs.login_server }}/worldmonitor:${{ github.sha }} \
+            --set-env-vars \
+              ACLED_ACCESS_TOKEN=secretref:acled-access-token \
+              CLOUDFLARE_API_TOKEN=secretref:cloudflare-api-token \
+              FINNHUB_API_KEY=secretref:finnhub-api-key \
+              FRED_API_KEY=secretref:fred-api-key
 
       - name: Get App URL
         run: |
