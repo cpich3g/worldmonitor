@@ -131,14 +131,15 @@ app.get('/api/finnhub/*path', async (req, res) => {
   await proxyRequest(`https://finnhub.io/api/v1/${req.params.path}?${query}`, res, 60);
 });
 
-// ACLED (requires API key)
+// ACLED (requires email and key)
 app.get('/api/acled/*path', async (req, res) => {
-  const apiKey = process.env.ACLED_ACCESS_TOKEN;
-  if (!apiKey) {
+  const email = process.env.ACLED_EMAIL;
+  const key = process.env.ACLED_PASSWORD;
+  if (!email || !key) {
     return res.status(503).json({ error: 'ACLED API not configured' });
   }
   const query = req.url.includes('?') ? req.url.split('?')[1] : '';
-  await proxyRequest(`https://acleddata.com/${req.params.path}?${query}&key=${apiKey}`, res, 3600);
+  await proxyRequest(`https://api.acleddata.com/${req.params.path}?${query}&email=${encodeURIComponent(email)}&key=${encodeURIComponent(key)}`, res, 3600);
 });
 
 // PizzINT
