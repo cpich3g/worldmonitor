@@ -15,24 +15,27 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Production stage - use nginx for better performance
-FROM nginx:alpine AS production
+# Production stage - use Node.js for API routes
+FROM node:20-alpine AS production
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+WORKDIR /app
 
-# Copy nginx configuration
-COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+# Install only production dependencies
+COPY package*.json ./
+RUN npm ci --omit=dev && npm install express
 
 # Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist ./dist
+
+# Copy server file
+COPY server.js ./
 
 # Expose port (Azure Container Apps will use this)
 EXPOSE 3000
 
-# Health check using curl
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl --fail --silent http://localhost:3000/health || exit 1
+  CMD node -e "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start server
+CMD ["node", "server.js"]
