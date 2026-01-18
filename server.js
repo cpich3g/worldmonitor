@@ -32,7 +32,7 @@ async function proxyRequest(targetUrl, res, cacheSeconds = 300) {
 }
 
 // ===== API Routes (MUST come before static files) =====
-// Express 5 uses :param(*) syntax for wildcards instead of just *
+// Express 5/path-to-regexp v8 uses *paramName syntax for wildcards
 
 // Earthquakes - USGS
 app.get('/api/earthquakes', async (req, res) => {
@@ -43,48 +43,48 @@ app.get('/api/earthquakes', async (req, res) => {
 });
 
 // Yahoo Finance
-app.get('/api/yahoo/:path(*)', async (req, res) => {
+app.get('/api/yahoo/*path', async (req, res) => {
   await proxyRequest(`https://query1.finance.yahoo.com/${req.params.path}`, res, 60);
 });
 
 // CoinGecko
-app.get('/api/coingecko/:path(*)', async (req, res) => {
+app.get('/api/coingecko/*path', async (req, res) => {
   await proxyRequest(`https://api.coingecko.com/${req.params.path}`, res, 60);
 });
 
 // Polymarket
-app.get('/api/polymarket/:path(*)', async (req, res) => {
+app.get('/api/polymarket/*path', async (req, res) => {
   await proxyRequest(`https://gamma-api.polymarket.com/${req.params.path}`, res, 60);
 });
 
 // FAA Status
-app.get('/api/faa/:path(*)', async (req, res) => {
+app.get('/api/faa/*path', async (req, res) => {
   await proxyRequest(`https://nasstatus.faa.gov/${req.params.path}`, res, 300);
 });
 
 // OpenSky Network
-app.get('/api/opensky/:path(*)', async (req, res) => {
+app.get('/api/opensky/*path', async (req, res) => {
   await proxyRequest(`https://opensky-network.org/api/${req.params.path}`, res, 60);
 });
 
 // GDELT
-app.get('/api/gdelt/:path(*)', async (req, res) => {
+app.get('/api/gdelt/*path', async (req, res) => {
   await proxyRequest(`https://api.gdeltproject.org/${req.params.path}`, res, 300);
 });
 
 // GDELT GEO
-app.get('/api/gdelt-geo/:path(*)', async (req, res) => {
+app.get('/api/gdelt-geo/*path', async (req, res) => {
   const query = req.url.includes('?') ? req.url.split('?')[1] : '';
   await proxyRequest(`https://api.gdeltproject.org/api/v2/geo/geo?${query}`, res, 300);
 });
 
 // NGA Warnings
-app.get('/api/nga-msi/:path(*)', async (req, res) => {
+app.get('/api/nga-msi/*path', async (req, res) => {
   await proxyRequest(`https://msi.nga.mil/${req.params.path}`, res, 3600);
 });
 
 // Cloudflare Radar (requires API token)
-app.get('/api/cloudflare-radar/:path(*)', async (req, res) => {
+app.get('/api/cloudflare-radar/*path', async (req, res) => {
   const token = process.env.CLOUDFLARE_API_TOKEN;
   if (!token) {
     return res.status(503).json({ error: 'Cloudflare API not configured' });
@@ -122,7 +122,7 @@ app.get('/api/fred-data', async (req, res) => {
 });
 
 // Finnhub (requires API key)
-app.get('/api/finnhub/:path(*)', async (req, res) => {
+app.get('/api/finnhub/*path', async (req, res) => {
   const apiKey = process.env.FINNHUB_API_KEY;
   if (!apiKey) {
     return res.status(503).json({ error: 'Finnhub API not configured' });
@@ -132,7 +132,7 @@ app.get('/api/finnhub/:path(*)', async (req, res) => {
 });
 
 // ACLED (requires API key)
-app.get('/api/acled/:path(*)', async (req, res) => {
+app.get('/api/acled/*path', async (req, res) => {
   const apiKey = process.env.ACLED_ACCESS_TOKEN;
   if (!apiKey) {
     return res.status(503).json({ error: 'ACLED API not configured' });
@@ -142,7 +142,7 @@ app.get('/api/acled/:path(*)', async (req, res) => {
 });
 
 // PizzINT
-app.get('/api/pizzint/:path(*)', async (req, res) => {
+app.get('/api/pizzint/*path', async (req, res) => {
   await proxyRequest(`https://www.pizzint.watch/api/${req.params.path}`, res, 300);
 });
 
@@ -161,7 +161,7 @@ const rssTargets = {
   'googlenews': 'https://news.google.com',
 };
 
-app.get('/rss/:source/:path(*)', async (req, res) => {
+app.get('/rss/:source/*path', async (req, res) => {
   const { source, path } = req.params;
   const target = rssTargets[source];
   if (!target) {
@@ -190,7 +190,7 @@ app.use(express.static(nodePath.join(__dirname, 'dist'), {
 }));
 
 // SPA fallback - serve index.html for all other routes
-app.get('/{*path}', (req, res) => {
+app.get('*path', (req, res) => {
   res.sendFile(nodePath.join(__dirname, 'dist', 'index.html'));
 });
 
