@@ -1,9 +1,9 @@
 import express from 'express';
-import path from 'path';
+import nodePath from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = nodePath.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +32,7 @@ async function proxyRequest(targetUrl, res, cacheSeconds = 300) {
 }
 
 // ===== API Routes (MUST come before static files) =====
+// Express 5 uses :param(*) syntax for wildcards instead of just *
 
 // Earthquakes - USGS
 app.get('/api/earthquakes', async (req, res) => {
@@ -42,63 +43,54 @@ app.get('/api/earthquakes', async (req, res) => {
 });
 
 // Yahoo Finance
-app.get('/api/yahoo/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://query1.finance.yahoo.com/${path}`, res, 60);
+app.get('/api/yahoo/:path(*)', async (req, res) => {
+  await proxyRequest(`https://query1.finance.yahoo.com/${req.params.path}`, res, 60);
 });
 
 // CoinGecko
-app.get('/api/coingecko/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://api.coingecko.com/${path}`, res, 60);
+app.get('/api/coingecko/:path(*)', async (req, res) => {
+  await proxyRequest(`https://api.coingecko.com/${req.params.path}`, res, 60);
 });
 
 // Polymarket
-app.get('/api/polymarket/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://gamma-api.polymarket.com/${path}`, res, 60);
+app.get('/api/polymarket/:path(*)', async (req, res) => {
+  await proxyRequest(`https://gamma-api.polymarket.com/${req.params.path}`, res, 60);
 });
 
 // FAA Status
-app.get('/api/faa/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://nasstatus.faa.gov/${path}`, res, 300);
+app.get('/api/faa/:path(*)', async (req, res) => {
+  await proxyRequest(`https://nasstatus.faa.gov/${req.params.path}`, res, 300);
 });
 
 // OpenSky Network
-app.get('/api/opensky/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://opensky-network.org/api/${path}`, res, 60);
+app.get('/api/opensky/:path(*)', async (req, res) => {
+  await proxyRequest(`https://opensky-network.org/api/${req.params.path}`, res, 60);
 });
 
 // GDELT
-app.get('/api/gdelt/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://api.gdeltproject.org/${path}`, res, 300);
+app.get('/api/gdelt/:path(*)', async (req, res) => {
+  await proxyRequest(`https://api.gdeltproject.org/${req.params.path}`, res, 300);
 });
 
 // GDELT GEO
-app.get('/api/gdelt-geo/*', async (req, res) => {
-  const path = req.params[0] || '';
+app.get('/api/gdelt-geo/:path(*)', async (req, res) => {
   const query = req.url.includes('?') ? req.url.split('?')[1] : '';
   await proxyRequest(`https://api.gdeltproject.org/api/v2/geo/geo?${query}`, res, 300);
 });
 
 // NGA Warnings
-app.get('/api/nga-msi/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://msi.nga.mil/${path}`, res, 3600);
+app.get('/api/nga-msi/:path(*)', async (req, res) => {
+  await proxyRequest(`https://msi.nga.mil/${req.params.path}`, res, 3600);
 });
 
 // Cloudflare Radar (requires API token)
-app.get('/api/cloudflare-radar/*', async (req, res) => {
-  const path = req.params[0];
+app.get('/api/cloudflare-radar/:path(*)', async (req, res) => {
   const token = process.env.CLOUDFLARE_API_TOKEN;
   if (!token) {
     return res.status(503).json({ error: 'Cloudflare API not configured' });
   }
   try {
-    const response = await fetch(`https://api.cloudflare.com/${path}`, {
+    const response = await fetch(`https://api.cloudflare.com/${req.params.path}`, {
       headers: {
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -130,31 +122,28 @@ app.get('/api/fred-data', async (req, res) => {
 });
 
 // Finnhub (requires API key)
-app.get('/api/finnhub/*', async (req, res) => {
+app.get('/api/finnhub/:path(*)', async (req, res) => {
   const apiKey = process.env.FINNHUB_API_KEY;
   if (!apiKey) {
     return res.status(503).json({ error: 'Finnhub API not configured' });
   }
-  const path = req.params[0];
   const query = req.url.includes('?') ? `${req.url.split('?')[1]}&token=${apiKey}` : `token=${apiKey}`;
-  await proxyRequest(`https://finnhub.io/api/v1/${path}?${query}`, res, 60);
+  await proxyRequest(`https://finnhub.io/api/v1/${req.params.path}?${query}`, res, 60);
 });
 
 // ACLED (requires API key)
-app.get('/api/acled/*', async (req, res) => {
+app.get('/api/acled/:path(*)', async (req, res) => {
   const apiKey = process.env.ACLED_ACCESS_TOKEN;
   if (!apiKey) {
     return res.status(503).json({ error: 'ACLED API not configured' });
   }
-  const path = req.params[0];
   const query = req.url.includes('?') ? req.url.split('?')[1] : '';
-  await proxyRequest(`https://acleddata.com/${path}?${query}&key=${apiKey}`, res, 3600);
+  await proxyRequest(`https://acleddata.com/${req.params.path}?${query}&key=${apiKey}`, res, 3600);
 });
 
 // PizzINT
-app.get('/api/pizzint/*', async (req, res) => {
-  const path = req.params[0];
-  await proxyRequest(`https://www.pizzint.watch/api/${path}`, res, 300);
+app.get('/api/pizzint/:path(*)', async (req, res) => {
+  await proxyRequest(`https://www.pizzint.watch/api/${req.params.path}`, res, 300);
 });
 
 // RSS Proxy - Generic handler for various RSS feeds
@@ -172,9 +161,8 @@ const rssTargets = {
   'googlenews': 'https://news.google.com',
 };
 
-app.get('/rss/:source/*', async (req, res) => {
-  const { source } = req.params;
-  const path = req.params[0];
+app.get('/rss/:source/:path(*)', async (req, res) => {
+  const { source, path } = req.params;
   const target = rssTargets[source];
   if (!target) {
     return res.status(404).json({ error: 'Unknown RSS source' });
@@ -196,14 +184,14 @@ app.get('/rss/:source/*', async (req, res) => {
 });
 
 // ===== Static Files (AFTER API routes) =====
-app.use(express.static(path.join(__dirname, 'dist'), {
+app.use(express.static(nodePath.join(__dirname, 'dist'), {
   maxAge: '1y',
   etag: true,
 }));
 
 // SPA fallback - serve index.html for all other routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+app.get('/{*path}', (req, res) => {
+  res.sendFile(nodePath.join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, () => {
