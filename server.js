@@ -4,13 +4,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, 'dist'), {
-  maxAge: '1y',
-  etag: true,
-}));
-
-// Health check endpoint
+// Health check endpoint (before static files)
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
@@ -33,7 +27,7 @@ async function proxyRequest(targetUrl, res, cacheSeconds = 300) {
   }
 }
 
-// ===== API Routes =====
+// ===== API Routes (MUST come before static files) =====
 
 // Earthquakes - USGS
 app.get('/api/earthquakes', async (req, res) => {
@@ -196,6 +190,12 @@ app.get('/rss/:source/*', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch RSS feed' });
   }
 });
+
+// ===== Static Files (AFTER API routes) =====
+app.use(express.static(path.join(__dirname, 'dist'), {
+  maxAge: '1y',
+  etag: true,
+}));
 
 // SPA fallback - serve index.html for all other routes
 app.get('*', (req, res) => {
