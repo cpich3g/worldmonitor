@@ -570,11 +570,11 @@ export class App {
     const panelsGrid = document.getElementById('panelsGrid')!;
 
     // Initialize map in the map section
-    // Default to MENA view on mobile for better focus
+    // Default view centered on Ireland
     const mapContainer = document.getElementById('mapContainer') as HTMLElement;
     this.map = new MapComponent(mapContainer, {
       zoom: this.isMobile ? 2.5 : 1.5,
-      pan: { x: 0, y: this.isMobile ? 0 : 60 },  // Pan north to show Europe/UK by default
+      pan: { x: 50, y: this.isMobile ? 0 : 120 },  // Pan to center on Ireland (~53°N, -8°W)
       view: this.isMobile ? 'mena' : 'global',
       layers: this.mapLayers,
       timeRange: '7d',
