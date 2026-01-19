@@ -2175,11 +2175,13 @@ export class MapComponent {
     const height = this.container.clientHeight;
     const mapHeight = width / 2; // Equirectangular 2:1 ratio
 
-    // Horizontal: at zoom 1, no pan. At higher zooms, allow proportional pan
-    const maxPanX = ((zoom - 1) / zoom) * (width / 2);
+    // Horizontal: at zoom 1, allow small pan. At higher zooms, allow more
+    const maxPanX = Math.max(50, ((zoom - 1) / zoom) * (width / 2));
 
-    // Vertical: allow panning to see poles if map extends beyond container
-    const extraVertical = Math.max(0, (mapHeight - height) / 2);
+    // Vertical: allow panning to see poles - be more permissive
+    // At zoom 1, the equirectangular projection shows the full world
+    // but we need to allow initial centering on non-equator regions
+    const extraVertical = Math.max(50, (mapHeight - height) / 2);
     const zoomPanY = ((zoom - 1) / zoom) * (height / 2);
     const maxPanY = extraVertical + zoomPanY;
 
