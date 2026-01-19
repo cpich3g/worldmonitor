@@ -91,6 +91,12 @@ app.get('/api/gdelt/*path', async (req, res) => {
   await proxyToFunctionApp(`gdelt/${getWildcardPath(req.params)}`, req, res, 300);
 });
 
+// GDELT DOC API - direct proxy for intelligence queries
+app.get('/api/gdelt-doc', async (req, res) => {
+  const query = req.url.includes('?') ? req.url.split('?')[1] : '';
+  await proxyRequest(`https://api.gdeltproject.org/api/v2/doc/doc?${query}&format=json`, res, 300);
+});
+
 // GDELT GEO - direct proxy (specific endpoint)
 app.get('/api/gdelt-geo/*path', async (req, res) => {
   const query = req.url.includes('?') ? req.url.split('?')[1] : '';
