@@ -20,6 +20,7 @@ env:
   ACR_NAME: ${{ secrets.ACR_NAME }}
   CONTAINER_APP_NAME: ${{ secrets.CONTAINER_APP_NAME }}
   FUNCTION_APP_NAME: ${{ secrets.FUNCTION_APP_NAME }}
+  AIS_RELAY_APP_NAME: ${{ secrets.AIS_RELAY_APP_NAME }}
   RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
 jobs:
@@ -45,7 +46,7 @@ jobs:
           ACR_LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer -o tsv)
           echo "login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
 
-      - name: Build and Push to ACR
+      - name: Build and Push Main App to ACR
         run: |
           az acr build \
             --registry ${{ env.ACR_NAME }} \
@@ -54,12 +55,30 @@ jobs:
             --build-arg VITE_WS_RELAY_URL=${{ secrets.VITE_WS_RELAY_URL }} \
             .
 
+      - name: Build and Push AIS Relay to ACR
+        if: ${{ env.AIS_RELAY_APP_NAME != '' }}
+        run: |
+          az acr build \
+            --registry ${{ env.ACR_NAME }} \
+            --image ais-relay:${{ github.sha }} \
+            --image ais-relay:latest \
+            --file ais-relay/Dockerfile \
+            ais-relay/
+
       - name: Deploy Container App
         run: |
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ steps.acr.outputs.login_server }}/sentinel:${{ github.sha }}
+
+      - name: Deploy AIS Relay Container App
+        if: ${{ env.AIS_RELAY_APP_NAME != '' }}
+        run: |
+          az containerapp update \
+            --name ${{ env.AIS_RELAY_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ steps.acr.outputs.login_server }}/ais-relay:${{ github.sha }}
 
       - name: Deploy Function App
         if: ${{ env.FUNCTION_APP_NAME != '' }}
@@ -86,5 +105,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** sentinel:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ env.AIS_RELAY_APP_NAME }}" ]; then
+            echo "**AIS Relay:** ais-relay:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -n "${{ env.FUNCTION_APP_NAME }}" ]; then
+            echo "**Function App:** ${{ env.FUNCTION_APP_NAME }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "**Deployed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
 
