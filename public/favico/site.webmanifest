@@ -1,19 +1,21 @@
 {
-  "name": "WorldMonitor",
-  "short_name": "WorldMonitor",
+  "name": "SENTINEL",
+  "short_name": "SENTINEL",
+  "description": "Global Intelligence Terminal",
   "icons": [
     {
-      "src": "/android-chrome-192x192.png",
+      "src": "/favico/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/android-chrome-512x512.png",
+      "src": "/favico/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ],
-  "theme_color": "#0c162d",
-  "background_color": "#0c162d",
-  "display": "standalone"
+  "theme_color": "#0a0f0a",
+  "background_color": "#0a0f0a",
+  "display": "standalone",
+  "start_url": "/"
 }

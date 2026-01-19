@@ -1,4 +1,4 @@
-name: Deploy Infrastructure
+name: Deploy SENTINEL Infrastructure
 
 on:
   push:
@@ -26,7 +26,7 @@ env:
 
 jobs:
   terraform:
-    name: Deploy Infrastructure
+    name: Deploy SENTINEL Infrastructure
     runs-on: ubuntu-latest
     outputs:
       acr_name: ${{ steps.outputs.outputs.acr_name }}
@@ -72,6 +72,9 @@ jobs:
           echo "container_app_name=$(terraform output -raw container_app_name)" >> $GITHUB_OUTPUT
           echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
 
-      - name: Show Outputs
+      - name: Infrastructure Summary
         working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: terraform output
+        run: |
+          echo "## 🏗️ SENTINEL Infrastructure Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          terraform output -no-color >> $GITHUB_STEP_SUMMARY

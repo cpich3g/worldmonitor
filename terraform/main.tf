@@ -1,5 +1,5 @@
-# World Monitor Infrastructure
-# Deploys: ACR, Container Apps Environment, Container App
+# SENTINEL - Global Intelligence Terminal
+# Deploys: ACR, Container Apps Environment, Container App, Function App
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
@@ -79,7 +79,7 @@ resource "azurerm_container_app" "main" {
 
   template {
     container {
-      name   = "worldmonitor"
+      name   = "sentinel"
       image  = "${azurerm_container_registry.main.login_server}/${var.container_image}"
       cpu    = 0.5
       memory = "1Gi"

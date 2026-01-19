@@ -1,0 +1,16 @@
+{
+  "name": "worldmonitor-functions",
+  "version": "1.0.0",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start",
+    "build": "echo 'No build step required'",
+    "test": "echo 'No tests configured'"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0"
+  }
+}

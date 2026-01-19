@@ -1,4 +1,4 @@
-name: Build and Deploy App
+name: Build and Deploy SENTINEL
 
 on:
   push:
@@ -17,16 +17,15 @@ permissions:
   contents: read
 
 env:
-  # These will be set from Terraform state or secrets
   ACR_NAME: ${{ secrets.ACR_NAME }}
   CONTAINER_APP_NAME: ${{ secrets.CONTAINER_APP_NAME }}
+  FUNCTION_APP_NAME: ${{ secrets.FUNCTION_APP_NAME }}
   RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
 jobs:
   build-and-deploy:
-    name: Build and Deploy
+    name: Build and Deploy SENTINEL
     runs-on: ubuntu-latest
-    # Only run if triggered manually, by push, or if infrastructure deploy succeeded
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     
     steps:
@@ -46,38 +45,45 @@ jobs:
           ACR_LOGIN_SERVER=$(az acr show --name ${{ env.ACR_NAME }} --query loginServer -o tsv)
           echo "login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
 
-      - name: Login to ACR
-        run: az acr login --name ${{ env.ACR_NAME }}
-
       - name: Build and Push to ACR
         run: |
           az acr build \
             --registry ${{ env.ACR_NAME }} \
-            --image worldmonitor:${{ github.sha }} \
-            --image worldmonitor:latest \
+            --image sentinel:${{ github.sha }} \
+            --image sentinel:latest \
             --build-arg VITE_WS_RELAY_URL=${{ secrets.VITE_WS_RELAY_URL }} \
             .
 
-      - name: Deploy to Container App with Environment Variables
+      - name: Deploy Container App
         run: |
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ steps.acr.outputs.login_server }}/worldmonitor:${{ github.sha }} \
-            --set-env-vars \
-              ACLED_ACCESS_TOKEN=secretref:acled-access-token \
-              CLOUDFLARE_API_TOKEN=secretref:cloudflare-api-token \
-              FINNHUB_API_KEY=secretref:finnhub-api-key \
-              FRED_API_KEY=secretref:fred-api-key
+            --image ${{ steps.acr.outputs.login_server }}/sentinel:${{ github.sha }}
 
-      - name: Get App URL
+      - name: Deploy Function App
+        if: ${{ env.FUNCTION_APP_NAME != '' }}
+        run: |
+          cd functions
+          npm ci --production
+          zip -r ../functions.zip .
+          cd ..
+          az functionapp deployment source config-zip \
+            --name ${{ env.FUNCTION_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --src functions.zip
+
+      - name: Deployment Summary
         run: |
           APP_URL=$(az containerapp show \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --query properties.configuration.ingress.fqdn -o tsv)
-          echo "## Deployment Complete! 🚀" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 🛡️ SENTINEL Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Application URL:** https://$APP_URL" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** worldmonitor:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** sentinel:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

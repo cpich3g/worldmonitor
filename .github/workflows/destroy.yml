@@ -1,4 +1,4 @@
-name: Destroy Infrastructure
+name: Destroy SENTINEL Infrastructure
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ env:
 
 jobs:
   destroy:
-    name: Destroy Infrastructure
+    name: Destroy SENTINEL Infrastructure
     runs-on: ubuntu-latest
     if: github.event.inputs.confirm == 'destroy'
     
@@ -49,3 +49,11 @@ jobs:
       - name: Terraform Destroy
         working-directory: ${{ env.WORKING_DIRECTORY }}
         run: terraform destroy -auto-approve
+
+      - name: Destruction Summary
+        run: |
+          echo "## ⚠️ SENTINEL Infrastructure Destroyed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All resources have been removed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Destroyed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

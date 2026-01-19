@@ -8,16 +8,19 @@ const __dirname = nodePath.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Azure Function App URL for API routing
+const FUNCTION_APP_URL = process.env.FUNCTION_APP_URL || 'https://wmfunc6185.azurewebsites.net';
+
 // Health check endpoint (before static files)
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-// API proxy helper
-async function proxyRequest(targetUrl, res, cacheSeconds = 300) {
+// API proxy helper - routes to Azure Function App or direct URL
+async function proxyRequest(targetUrl, res, cacheSeconds = 300, headers = {}) {
   try {
     const response = await fetch(targetUrl, {
-      headers: { 'Accept': 'application/json' },
+      headers: { 'Accept': 'application/json', ...headers },
     });
     const data = await response.text();
     res.set({
@@ -31,120 +34,135 @@ async function proxyRequest(targetUrl, res, cacheSeconds = 300) {
   }
 }
 
-// ===== API Routes (MUST come before static files) =====
+// Proxy to Azure Function App
+async function proxyToFunctionApp(path, req, res, cacheSeconds = 300) {
+  const queryString = req.url.includes('?') ? req.url.split('?')[1] : '';
+  const url = `${FUNCTION_APP_URL}/api/${path}${queryString ? '?' + queryString : ''}`;
+  await proxyRequest(url, res, cacheSeconds);
+}
+
+// Helper to get path from wildcard params (Express 5 returns array)
+function getWildcardPath(params) {
+  const path = params.path;
+  return Array.isArray(path) ? path.join('/') : (path || '');
+}
+
+// ===== API Routes - Routed to Azure Function App =====
 // Express 5/path-to-regexp v8 uses *paramName syntax for wildcards
 
-// Earthquakes - USGS
+// Earthquakes - routed to Function App
 app.get('/api/earthquakes', async (req, res) => {
-  await proxyRequest(
-    'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson',
-    res, 300
-  );
+  await proxyToFunctionApp('earthquakes', req, res, 300);
 });
 
-// Yahoo Finance
+// Yahoo Finance - routed to Function App
 app.get('/api/yahoo/*path', async (req, res) => {
-  await proxyRequest(`https://query1.finance.yahoo.com/${req.params.path}`, res, 60);
+  await proxyToFunctionApp(`yahoo/${getWildcardPath(req.params)}`, req, res, 60);
 });
 
-// CoinGecko
+// CoinGecko - routed to Function App
+app.get('/api/coingecko', async (req, res) => {
+  await proxyToFunctionApp('coingecko', req, res, 60);
+});
 app.get('/api/coingecko/*path', async (req, res) => {
-  await proxyRequest(`https://api.coingecko.com/${req.params.path}`, res, 60);
+  await proxyToFunctionApp(`coingecko/${getWildcardPath(req.params)}`, req, res, 60);
 });
 
-// Polymarket
+// Polymarket - routed to Function App
+app.get('/api/polymarket', async (req, res) => {
+  await proxyToFunctionApp('polymarket/markets', req, res, 60);
+});
 app.get('/api/polymarket/*path', async (req, res) => {
-  await proxyRequest(`https://gamma-api.polymarket.com/${req.params.path}`, res, 60);
+  await proxyToFunctionApp(`polymarket/${getWildcardPath(req.params)}`, req, res, 60);
 });
 
-// FAA Status
+// FAA Status - direct proxy (not in Function App)
 app.get('/api/faa/*path', async (req, res) => {
-  await proxyRequest(`https://nasstatus.faa.gov/${req.params.path}`, res, 300);
+  await proxyRequest(`https://nasstatus.faa.gov/${getWildcardPath(req.params)}`, res, 300);
 });
 
-// OpenSky Network
+// OpenSky Network - routed to Function App
 app.get('/api/opensky/*path', async (req, res) => {
-  await proxyRequest(`https://opensky-network.org/api/${req.params.path}`, res, 60);
+  await proxyToFunctionApp(`opensky/${getWildcardPath(req.params)}`, req, res, 60);
 });
 
-// GDELT
+// GDELT - routed to Function App
 app.get('/api/gdelt/*path', async (req, res) => {
-  await proxyRequest(`https://api.gdeltproject.org/${req.params.path}`, res, 300);
+  await proxyToFunctionApp(`gdelt/${getWildcardPath(req.params)}`, req, res, 300);
 });
 
-// GDELT GEO
+// GDELT GEO - direct proxy (specific endpoint)
 app.get('/api/gdelt-geo/*path', async (req, res) => {
   const query = req.url.includes('?') ? req.url.split('?')[1] : '';
   await proxyRequest(`https://api.gdeltproject.org/api/v2/geo/geo?${query}`, res, 300);
 });
 
-// NGA Warnings
+// NGA Warnings - direct proxy (not in Function App)
 app.get('/api/nga-msi/*path', async (req, res) => {
-  await proxyRequest(`https://msi.nga.mil/${req.params.path}`, res, 3600);
+  await proxyRequest(`https://msi.nga.mil/${getWildcardPath(req.params)}`, res, 3600);
 });
 
-// Cloudflare Radar (requires API token)
+// Cloudflare Radar - direct proxy (requires API token from Container App env)
 app.get('/api/cloudflare-radar/*path', async (req, res) => {
   const token = process.env.CLOUDFLARE_API_TOKEN;
   if (!token) {
     return res.status(503).json({ error: 'Cloudflare API not configured' });
   }
+  await proxyRequest(
+    `https://api.cloudflare.com/${getWildcardPath(req.params)}`,
+    res, 300,
+    { 'Authorization': `Bearer ${token}` }
+  );
+});
+
+// FRED Economic Data - routed to Function App
+app.get('/api/fred-data', async (req, res) => {
+  await proxyToFunctionApp('fred-data', req, res, 3600);
+});
+
+// Finnhub - routed to Function App
+app.get('/api/finnhub', async (req, res) => {
+  await proxyToFunctionApp('finnhub', req, res, 60);
+});
+app.get('/api/finnhub/*path', async (req, res) => {
+  await proxyToFunctionApp(`finnhub/${getWildcardPath(req.params)}`, req, res, 60);
+});
+
+// ACLED - routed to Function App
+app.get('/api/acled/*path', async (req, res) => {
+  await proxyToFunctionApp(`acled/${getWildcardPath(req.params)}`, req, res, 3600);
+});
+
+// PizzINT - direct proxy (not in Function App)
+app.get('/api/pizzint/*path', async (req, res) => {
+  await proxyRequest(`https://www.pizzint.watch/api/${getWildcardPath(req.params)}`, res, 300);
+});
+
+// RSS Proxy - URL-based proxy for any RSS feed
+app.get('/api/rss-proxy', async (req, res) => {
+  const feedUrl = req.query.url;
+  if (!feedUrl) {
+    return res.status(400).json({ error: 'Missing url parameter' });
+  }
+  
   try {
-    const response = await fetch(`https://api.cloudflare.com/${req.params.path}`, {
+    const response = await fetch(feedUrl, {
       headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) WorldMonitor/1.0',
       },
     });
     const data = await response.text();
     res.set({
-      'Content-Type': 'application/json',
+      'Content-Type': response.headers.get('content-type') || 'application/xml',
       'Access-Control-Allow-Origin': '*',
       'Cache-Control': 'public, max-age=300',
     });
     res.status(response.status).send(data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch data' });
+    console.error('[RSS Proxy] Error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch RSS feed' });
   }
-});
-
-// FRED Economic Data (requires API key)
-app.get('/api/fred-data', async (req, res) => {
-  const apiKey = process.env.FRED_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({ error: 'FRED API not configured' });
-  }
-  const { series_id, observation_start, observation_end } = req.query;
-  let url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series_id}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=10`;
-  if (observation_start) url += `&observation_start=${observation_start}`;
-  if (observation_end) url += `&observation_end=${observation_end}`;
-  await proxyRequest(url, res, 3600);
-});
-
-// Finnhub (requires API key)
-app.get('/api/finnhub/*path', async (req, res) => {
-  const apiKey = process.env.FINNHUB_API_KEY;
-  if (!apiKey) {
-    return res.status(503).json({ error: 'Finnhub API not configured' });
-  }
-  const query = req.url.includes('?') ? `${req.url.split('?')[1]}&token=${apiKey}` : `token=${apiKey}`;
-  await proxyRequest(`https://finnhub.io/api/v1/${req.params.path}?${query}`, res, 60);
-});
-
-// ACLED (requires email and key)
-app.get('/api/acled/*path', async (req, res) => {
-  const email = process.env.ACLED_EMAIL;
-  const key = process.env.ACLED_PASSWORD;
-  if (!email || !key) {
-    return res.status(503).json({ error: 'ACLED API not configured' });
-  }
-  const query = req.url.includes('?') ? req.url.split('?')[1] : '';
-  await proxyRequest(`https://api.acleddata.com/${req.params.path}?${query}&email=${encodeURIComponent(email)}&key=${encodeURIComponent(key)}`, res, 3600);
-});
-
-// PizzINT
-app.get('/api/pizzint/*path', async (req, res) => {
-  await proxyRequest(`https://www.pizzint.watch/api/${req.params.path}`, res, 300);
 });
 
 // RSS Proxy - Generic handler for various RSS feeds
@@ -163,7 +181,8 @@ const rssTargets = {
 };
 
 app.get('/rss/:source/*path', async (req, res) => {
-  const { source, path } = req.params;
+  const source = req.params.source;
+  const path = getWildcardPath(req.params);
   const target = rssTargets[source];
   if (!target) {
     return res.status(404).json({ error: 'Unknown RSS source' });
@@ -196,5 +215,5 @@ app.get('*path', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`World Monitor server running on port ${PORT}`);
+  console.log(`SENTINEL server running on port ${PORT}`);
 });
