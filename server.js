@@ -125,6 +125,21 @@ app.get('/api/cloudflare-radar/*path', async (req, res) => {
   );
 });
 
+// Cloudflare Outages API (NetBlocks data)
+app.get('/api/cloudflare-outages', async (req, res) => {
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!token) {
+    return res.json({ configured: false });
+  }
+  const dateRange = req.query.dateRange || '7d';
+  const limit = req.query.limit || 50;
+  await proxyRequest(
+    `https://api.cloudflare.com/client/v4/radar/annotations/outages?dateRange=${dateRange}&limit=${limit}`,
+    res, 300,
+    { 'Authorization': `Bearer ${token}` }
+  );
+});
+
 // FRED Economic Data - routed to Function App
 app.get('/api/fred-data', async (req, res) => {
   await proxyToFunctionApp('fred-data', req, res, 3600);
