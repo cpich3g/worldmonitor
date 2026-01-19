@@ -1126,6 +1126,7 @@ body.playback-mode .status-dot {
   height: 100%;
   transition: transform 0.3s ease;
   position: relative;
+  overflow: visible;  /* Allow content to show during zoom/pan transforms */
 }
 
 .map-cluster-canvas {

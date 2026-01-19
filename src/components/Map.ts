@@ -708,10 +708,17 @@ export class MapComponent {
 
   private getProjection(width: number, height: number): d3.GeoProjection {
     if (this.state.view === 'global' || this.state.view === 'mena') {
-      // Scale by width to fill horizontally, center at equator
+      // For equirectangular: longitude maps to X, latitude to Y
+      // Full world: 360° longitude, 180° latitude (2:1 aspect ratio)
+      // We need to fit the map within the container while showing full world
+      // Use the smaller of width-based or height-based scaling to ensure full visibility
+      const scaleByWidth = width / (2 * Math.PI);  // Scale to fit 360° in width
+      const scaleByHeight = height / Math.PI;       // Scale to fit 180° in height
+      const scale = Math.min(scaleByWidth, scaleByHeight);
+      
       return d3
         .geoEquirectangular()
-        .scale(width / (2 * Math.PI))
+        .scale(scale)
         .center([0, 0])
         .translate([width / 2, height / 2]);
     }
@@ -2173,17 +2180,21 @@ export class MapComponent {
     const zoom = this.state.zoom;
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
-    const mapHeight = width / 2; // Equirectangular 2:1 ratio
-
-    // Horizontal: at zoom 1, allow small pan. At higher zooms, allow more
-    const maxPanX = Math.max(50, ((zoom - 1) / zoom) * (width / 2));
-
-    // Vertical: allow panning to see poles - be more permissive
-    // At zoom 1, the equirectangular projection shows the full world
-    // but we need to allow initial centering on non-equator regions
-    const extraVertical = Math.max(50, (mapHeight - height) / 2);
+    
+    // With the new projection that fits within container, 
+    // at zoom 1 the full world is visible, so minimal pan needed
+    // At higher zooms, allow proportional panning
+    
+    // Calculate how much we can pan based on zoom level
+    // At zoom 1: small pan allowed for initial positioning
+    // At zoom N: can pan up to (N-1)/N of half the dimension
+    const basePanX = 100;  // Base allowance for initial centering
+    const basePanY = 100;
+    const zoomPanX = ((zoom - 1) / zoom) * (width / 2);
     const zoomPanY = ((zoom - 1) / zoom) * (height / 2);
-    const maxPanY = extraVertical + zoomPanY;
+    
+    const maxPanX = basePanX + zoomPanX;
+    const maxPanY = basePanY + zoomPanY;
 
     this.state.pan.x = Math.max(-maxPanX, Math.min(maxPanX, this.state.pan.x));
     this.state.pan.y = Math.max(-maxPanY, Math.min(maxPanY, this.state.pan.y));
