@@ -98,6 +98,10 @@ app.get('/api/gdelt-doc', async (req, res) => {
 });
 
 // GDELT GEO - direct proxy (specific endpoint)
+app.get('/api/gdelt-geo', async (req, res) => {
+  const query = req.url.includes('?') ? req.url.split('?')[1] : '';
+  await proxyRequest(`https://api.gdeltproject.org/api/v2/geo/geo?${query}`, res, 300);
+});
 app.get('/api/gdelt-geo/*path', async (req, res) => {
   const query = req.url.includes('?') ? req.url.split('?')[1] : '';
   await proxyRequest(`https://api.gdeltproject.org/api/v2/geo/geo?${query}`, res, 300);
@@ -135,6 +139,9 @@ app.get('/api/finnhub/*path', async (req, res) => {
 });
 
 // ACLED - routed to Function App
+app.get('/api/acled', async (req, res) => {
+  await proxyToFunctionApp('acled', req, res, 3600);
+});
 app.get('/api/acled/*path', async (req, res) => {
   await proxyToFunctionApp(`acled/${getWildcardPath(req.params)}`, req, res, 3600);
 });
